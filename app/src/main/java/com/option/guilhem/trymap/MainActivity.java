@@ -3,11 +3,13 @@ package com.option.guilhem.trymap;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +17,10 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 
+import com.mapbox.geocoder.GeocoderCriteria;
+import com.mapbox.geocoder.MapboxGeocoder;
+import com.mapbox.geocoder.service.models.GeocoderFeature;
+import com.mapbox.geocoder.service.models.GeocoderResponse;
 import com.mapbox.mapboxsdk.MapboxAccountManager;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -32,6 +38,13 @@ import com.mapbox.services.geocoding.v5.GeocodingCriteria;
 import com.mapbox.services.geocoding.v5.models.CarmenFeature;
 
 
+import java.util.List;
+
+import retrofit.Callback;
+import retrofit.Response;
+import retrofit.Retrofit;
+
+
 public class MainActivity extends AppCompatActivity {
 
     private MapView mapView;
@@ -39,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton floatingActionButton;
     private LocationServices locationServices;
     private LocationListener locationListener;
+    private GeocoderAutoCompleteView autoCompleteView;
 
     private static final int PERMISSIONS_LOCATION = 0;
 
@@ -72,10 +86,20 @@ public class MainActivity extends AppCompatActivity {
 
                 //centrer la vue au demarrage
                 toggleGps(!map.isMyLocationEnabled());
+
+
+                mapboxMap.setOnMapClickListener(new MapboxMap.OnMapClickListener() {
+                    @Override
+                    public void onMapClick(@NonNull LatLng point) {
+
+
+                        geocode(point);
+                    }
+                });
             }
         });
 
-        GeocoderAutoCompleteView autoCompleteView = (GeocoderAutoCompleteView) findViewById(R.id.query);
+        autoCompleteView = (GeocoderAutoCompleteView) findViewById(R.id.query);
         autoCompleteView.setAccessToken(MapboxAccountManager.getInstance().getAccessToken());
         autoCompleteView.setType(GeocodingCriteria.TYPE_ADDRESS);
         autoCompleteView.setOnFeatureListener(new GeocoderAutoCompleteView.OnFeatureListener() {
@@ -95,6 +119,54 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    //honteusement copié sur un exemple
+    private void geocode(final LatLng point) {
+        new AsyncTask<Void, Void, Void>() {
+
+            @Override
+            protected Void doInBackground(Void... params) {
+                MapboxGeocoder client = new MapboxGeocoder.Builder()
+                        .setAccessToken(MapboxAccountManager.getInstance().getAccessToken())
+                        .setCoordinates(point.getLongitude(), point.getLatitude())
+                        .setType(GeocoderCriteria.TYPE_ADDRESS)
+                        .build();
+
+                client.enqueue(new Callback<GeocoderResponse>() {
+                                   @Override
+                                   public void onResponse(Response<GeocoderResponse> response, Retrofit retrofit) {
+                                       List<GeocoderFeature> results = response.body().getFeatures();
+                                       if (results.size() > 0) {
+                                           String placeName = results.get(0).getPlaceName();
+                                           setSuccess(placeName);
+                                       } else {
+                                           setMessage("No results.");
+                                       }
+                                   }
+
+                                   @Override
+                                   public void onFailure(Throwable t) {
+                                       setError(t.getMessage());
+                                   }
+                               }
+                );
+                return null;
+            }
+        }.execute();
+    }
+
+    private void setMessage(String message) {
+        Log.d("DEBUG INFO", "Message: " + message);
+    }
+
+    private void setSuccess(String placeName) {
+        Log.d("DEBUG INFO", "Place name: " + placeName);
+        autoCompleteView.setText(placeName);
+    }
+
+    private void setError(String message) {
+        Log.e("DEBUG INFO", "Error: " + message);
     }
 
     private void updateMap(double latitude, double longitude) {
