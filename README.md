@@ -1,8 +1,10 @@
 # trymaptest
 test technique
 
+Known bug:
+- Pour l'instant, pour avoir l'adresse géoloc, il faut clicker au doigtsur la map a l'endroit voulu pour lancer la requete.
 
 TODO: 
-- Formater correctement le retour de la requete de geoloc
-- Prendre le centre de l'écran pour lancer la requete
 - sauvegarde permanente des adresse du menu
+
+Min sdk 19
