@@ -1,49 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<android.support.design.widget.CoordinatorLayout
+
+<android.support.v4.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:mapbox="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/burgerLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".MainActivity">
+    android:layout_height="match_parent">
 
-    <com.mapbox.mapboxsdk.maps.MapView
-        android:id="@+id/mapView"
+
+    <!-- main view -->
+    <android.support.design.widget.CoordinatorLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:mapbox="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        mapbox:style_url="@string/style_mapbox_streets"/>
+        android:orientation="vertical"
+        tools:context=".MainActivity">
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/location_toggle_fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end|bottom"
-        android:layout_margin="16dp"
-        app:srcCompat="@drawable/ic_my_location_24dp"
-        tools:ignore="VectorDrawableCompat"
-        app:backgroundTint="@color/colorAccent"/>
+        <com.mapbox.mapboxsdk.maps.MapView
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            mapbox:style_url="@string/style_mapbox_streets"/>
 
-    <com.mapbox.services.android.geocoder.ui.GeocoderAutoCompleteView
-        android:id="@+id/query"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginEnd="70dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="14dp"
-        android:background="@android:color/white"
-        android:elevation="12dp"
-        android:hint="Search Location"
-        android:padding="10dp"
-        android:singleLine="true"
-        android:textColor="@android:color/black"/>
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/location_toggle_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_margin="16dp"
+            app:srcCompat="@drawable/ic_my_location_24dp"
+            tools:ignore="VectorDrawableCompat"
+            app:backgroundTint="@color/colorAccent"/>
 
+        <com.mapbox.services.android.geocoder.ui.GeocoderAutoCompleteView
+            android:id="@+id/query"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginEnd="70dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="14dp"
+            android:background="@android:color/white"
+            android:elevation="12dp"
+            android:hint="Search Location"
+            android:padding="10dp"
+            android:singleLine="true"
+            android:textColor="@android:color/black"/>
 
-</android.support.design.widget.CoordinatorLayout>
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/burger_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|center_horizontal"
+            android:layout_marginStart="5dp"
+            app:srcCompat="@drawable/ic_burger_icon"
+            tools:ignore="VectorDrawableCompat"
+            app:backgroundTint="@android:color/transparent"
+            app:layout_anchor="@+id/mapView"
+            app:layout_anchorGravity="center_vertical" />
 
+    </android.support.design.widget.CoordinatorLayout>
 
+    <!-- Burger menu -->
+    <RelativeLayout
+        android:id="@+id/burgerPane"
+        android:layout_width="280dp"
+        android:layout_gravity="center|start"
+        android:layout_height="400dp">
+
+        <RelativeLayout
+            android:id="@+id/profileBox"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@color/colorAccent"
+            android:padding="0dp" >
+
+               <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/oldAddress"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recent"
+                    android:textStyle="bold"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+        </RelativeLayout>
+
+        <!-- listView -->
+        <ListView
+            android:id="@+id/list"
+            android:layout_below="@+id/profileBox"
+            android:choiceMode="singleChoice"
+            android:layout_width="280dp"
+            android:layout_height="match_parent"
+            android:background="@color/colorWhite"/>
+
+    </RelativeLayout>
+
+</android.support.v4.widget.DrawerLayout>

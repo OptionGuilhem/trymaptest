@@ -1,6 +1,7 @@
 package com.option.guilhem.trymap;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
@@ -8,13 +9,20 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 
 import com.mapbox.geocoder.GeocoderCriteria;
@@ -38,6 +46,7 @@ import com.mapbox.services.geocoding.v5.GeocodingCriteria;
 import com.mapbox.services.geocoding.v5.models.CarmenFeature;
 
 
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit.Callback;
@@ -50,11 +59,18 @@ public class MainActivity extends AppCompatActivity {
     private MapView mapView;
     private MapboxMap map;
     private FloatingActionButton floatingActionButton;
+    private FloatingActionButton burgerButton;
     private LocationServices locationServices;
     private LocationListener locationListener;
     private GeocoderAutoCompleteView autoCompleteView;
 
     private static final int PERMISSIONS_LOCATION = 0;
+
+    ListView mBurgerList;
+    RelativeLayout mBurgerPane;
+    private DrawerLayout mBurgerLayout;
+    ArrayList<NavItem> mNavItems = new ArrayList<NavItem>();
+    private BurgerAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +78,32 @@ public class MainActivity extends AppCompatActivity {
 
         MapboxAccountManager.start(this, getString(R.string.access_token));
         setContentView(R.layout.activity_main);
+
+
+
+        mBurgerLayout = (DrawerLayout)findViewById(R.id.burgerLayout);
+
+        mBurgerPane = (RelativeLayout) findViewById(R.id.burgerPane);
+        mBurgerList = (ListView) findViewById(R.id.list);
+        adapter = new BurgerAdapter(this, mNavItems);
+        mBurgerList.setAdapter(adapter);
+
+        mBurgerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                TextView textView = (TextView) view.findViewById(R.id.title);
+                String select = textView.getText().toString();
+                autoCompleteView.setText(select);
+                //TODO : need to auto move to the coord
+
+                mBurgerList.setItemChecked(position, true);
+
+                // Close
+                mBurgerLayout.closeDrawer(mBurgerPane);
+            }
+        });
+
         locationServices = LocationServices.getLocationServices(MainActivity.this);
 
         mapView = (MapView) findViewById(R.id.mapView);
@@ -91,8 +133,6 @@ public class MainActivity extends AppCompatActivity {
                 mapboxMap.setOnMapClickListener(new MapboxMap.OnMapClickListener() {
                     @Override
                     public void onMapClick(@NonNull LatLng point) {
-
-
                         geocode(point);
                     }
                 });
@@ -103,10 +143,19 @@ public class MainActivity extends AppCompatActivity {
         autoCompleteView.setAccessToken(MapboxAccountManager.getInstance().getAccessToken());
         autoCompleteView.setType(GeocodingCriteria.TYPE_ADDRESS);
         autoCompleteView.setOnFeatureListener(new GeocoderAutoCompleteView.OnFeatureListener() {
+
             @Override
             public void OnFeatureClick(CarmenFeature feature) {
                 Position position = feature.asPosition();
                 updateMap(position.getLatitude(), position.getLongitude());
+            }
+        });
+
+        burgerButton = (FloatingActionButton) findViewById(R.id.burger_fab);
+        burgerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mBurgerLayout.openDrawer(mBurgerPane);
             }
         });
 
@@ -139,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
                                        List<GeocoderFeature> results = response.body().getFeatures();
                                        if (results.size() > 0) {
                                            String placeName = results.get(0).getPlaceName();
+
                                            setSuccess(placeName);
                                        } else {
                                            setMessage("No results.");
@@ -160,9 +210,14 @@ public class MainActivity extends AppCompatActivity {
         Log.d("DEBUG INFO", "Message: " + message);
     }
 
+
     private void setSuccess(String placeName) {
         Log.d("DEBUG INFO", "Place name: " + placeName);
         autoCompleteView.setText(placeName);
+        if (mNavItems.size() > 14)
+            mNavItems.remove(14);
+        mNavItems.add(0, new NavItem(placeName));
+        adapter.notifyDataSetChanged();
     }
 
     private void setError(String message) {
@@ -263,4 +318,62 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+
+
+
+
+    //inerclass for burger menu
+
+    class NavItem {
+        String mTitle;
+
+        public NavItem(String title) {
+            mTitle = title;
+        }
+    }
+
+    class BurgerAdapter extends BaseAdapter {
+        Context mContext;
+        ArrayList<NavItem> mNavItems;
+
+        public BurgerAdapter(Context context, ArrayList<NavItem> navItems) {
+            mContext = context;
+            mNavItems = navItems;
+        }
+
+        @Override
+        public int getCount() {
+            return mNavItems.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return mNavItems.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            View view;
+
+            if (convertView == null) {
+                LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                view = inflater.inflate(R.layout.burger_item, null);
+            } else {
+                view = convertView;
+            }
+            TextView titleView = (TextView) view.findViewById(R.id.title);
+
+            titleView.setText( mNavItems.get(position).mTitle);
+
+            return view;
+        }
+
+    }
+
 }
