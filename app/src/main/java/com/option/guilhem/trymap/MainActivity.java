@@ -2,6 +2,7 @@ package com.option.guilhem.trymap;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.AsyncTask;
@@ -24,7 +25,8 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.mapbox.geocoder.GeocoderCriteria;
 import com.mapbox.geocoder.MapboxGeocoder;
 import com.mapbox.geocoder.service.models.GeocoderFeature;
@@ -45,7 +47,7 @@ import com.mapbox.services.commons.models.Position;
 import com.mapbox.services.geocoding.v5.GeocodingCriteria;
 import com.mapbox.services.geocoding.v5.models.CarmenFeature;
 
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,8 +71,9 @@ public class MainActivity extends AppCompatActivity {
     ListView mBurgerList;
     RelativeLayout mBurgerPane;
     private DrawerLayout mBurgerLayout;
-    ArrayList<NavItem> mNavItems = new ArrayList<NavItem>();
+    ArrayList<NavItem> mNavItems;
     private BurgerAdapter adapter;
+    private SharedPreferences pref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,10 +82,18 @@ public class MainActivity extends AppCompatActivity {
         MapboxAccountManager.start(this, getString(R.string.access_token));
         setContentView(R.layout.activity_main);
 
+        pref = getPreferences(MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = pref.getString("address", null);
+        Type type = new TypeToken<ArrayList<NavItem>>() {}.getType();
 
+        if (json != null) {
+            mNavItems = gson.fromJson(json, type);
+        } else {
+            mNavItems = new ArrayList<NavItem>();
+        }
 
         mBurgerLayout = (DrawerLayout)findViewById(R.id.burgerLayout);
-
         mBurgerPane = (RelativeLayout) findViewById(R.id.burgerPane);
         mBurgerList = (ListView) findViewById(R.id.list);
         adapter = new BurgerAdapter(this, mNavItems);
@@ -92,14 +103,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
+                NavItem current = (NavItem) adapter.getItem(position);
                 TextView textView = (TextView) view.findViewById(R.id.title);
                 String select = textView.getText().toString();
-                autoCompleteView.setText(select);
-                //TODO : need to auto move to the coord
 
+                updateMap(current.mLat, current.mLng);
                 mBurgerList.setItemChecked(position, true);
-
-                // Close
+                autoCompleteView.setText(select);
                 mBurgerLayout.closeDrawer(mBurgerPane);
             }
         });
@@ -146,7 +156,12 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void OnFeatureClick(CarmenFeature feature) {
+
                 Position position = feature.asPosition();
+
+                //add to burger menu
+                mNavItems.add(0, new NavItem(feature.getPlaceName(), position.getLatitude(), position.getLongitude()));
+                adapter.notifyDataSetChanged();
                 updateMap(position.getLatitude(), position.getLongitude());
             }
         });
@@ -188,8 +203,10 @@ public class MainActivity extends AppCompatActivity {
                                        List<GeocoderFeature> results = response.body().getFeatures();
                                        if (results.size() > 0) {
                                            String placeName = results.get(0).getPlaceName();
+                                           double lat = results.get(0).getLatitude();
+                                           double lng = results.get(0).getLongitude();
 
-                                           setSuccess(placeName);
+                                           setSuccess(placeName, lat, lng);
                                        } else {
                                            setMessage("No results.");
                                        }
@@ -211,12 +228,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void setSuccess(String placeName) {
+    private void setSuccess(String placeName, double lat, double lng) {
         Log.d("DEBUG INFO", "Place name: " + placeName);
         autoCompleteView.setText(placeName);
         if (mNavItems.size() > 14)
             mNavItems.remove(14);
-        mNavItems.add(0, new NavItem(placeName));
+        mNavItems.add(0, new NavItem(placeName, lat, lng));
         adapter.notifyDataSetChanged();
     }
 
@@ -231,6 +248,8 @@ public class MainActivity extends AppCompatActivity {
                 .build();
         map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 5000, null);
     }
+
+
 
     @Override
     public void onResume() {
@@ -259,6 +278,12 @@ public class MainActivity extends AppCompatActivity {
         if (locationListener != null) {
             locationServices.removeLocationListener(locationListener);
         }
+
+        SharedPreferences.Editor editor = pref.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(mNavItems);
+        editor.putString("address", json);
+        editor.commit();
     }
 
     @Override
@@ -327,9 +352,13 @@ public class MainActivity extends AppCompatActivity {
 
     class NavItem {
         String mTitle;
+        double mLat;
+        double mLng;
 
-        public NavItem(String title) {
+        public NavItem(String title, double lat, double lng) {
             mTitle = title;
+            mLat = lat;
+            mLng = lng;
         }
     }
 
@@ -375,5 +404,4 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
-
 }

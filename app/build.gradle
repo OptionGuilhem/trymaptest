@@ -41,6 +41,9 @@ dependencies {
         transitive=true
     }
 
+    //to store object in sharedpref
+    compile 'com.google.code.gson:gson:2.8.0'
+
 }
 
 
